@@ -537,6 +537,7 @@ public class UAVProject {
 						for (Node node : fin) {
 
 							System.out.print(node.nodeNum + " ");
+							node.wifi = true;
 							n.nodeWifiTimes.put(node.nodeNum, n.nodeWifiTimes.get(node.nodeNum) + runTime / 1000);
 
 						}
@@ -738,6 +739,7 @@ class Node implements Serializable {
 	ArrayList<Coordinates> coords = new ArrayList<Coordinates>();
 
 	int baseNode = -1;
+	boolean wifi = false;
 
 	double initialPause;
 	double remainingPause;
