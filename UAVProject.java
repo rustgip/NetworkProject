@@ -26,7 +26,7 @@ public class UAVProject {
 
 	public static void main(String[] args) throws InterruptedException {
 
-		int networkTime = 500; // Total number of executions
+		int networkTime = 200; // Total number of executions
 		double executionTime = 300; // Loop time in ms - 1000 = 1 second, change
 									// to 100-200 for faster executions
 
@@ -449,9 +449,6 @@ public class UAVProject {
 						if (inRangeBaseStation(n, n.movingNodes.get(movePos), n.baseNodes, time)) {
 
 							Node curr = n.getNode(n, movePos);
-
-							double time = n.nodeWifiTimes.get(n.movingNodes.get(movePos).nodeNum);
-							n.nodeWifiTimes.put(n.movingNodes.get(movePos).nodeNum, time + runTime / 1000);
 							finalList.add(curr);
 							// System.out.println("ADDING: " + curr.nodeNum);
 
@@ -498,9 +495,10 @@ public class UAVProject {
 
 						System.out.print("Final Wifi: ");
 
-						for (Node n : fin) {
+						for (Node node : fin) {
 
-							System.out.print(n.nodeNum + " ");
+							System.out.print(node.nodeNum + " ");
+							n.nodeWifiTimes.put(node.nodeNum, n.nodeWifiTimes.get(node.nodeNum) + runTime / 1000);
 
 						}
 
