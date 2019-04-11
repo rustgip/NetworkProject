@@ -147,6 +147,13 @@ public class UAVProject {
 		int num = curr.baseNode;
 		boolean loop = true;
 
+		if (baseStations.size() < 2) {
+			
+			System.out.println("YOU NEED MORE THAN ONE BASE STATION SO YOU CAN SWITCH!");
+			System.exit(0);
+			
+		}
+		
 		if (num == -1) {
 
 			num = (int) curr.GenerateRandom(baseStations.size());
@@ -183,23 +190,25 @@ public class UAVProject {
 			}
 		}
 
-//		Print lines for when we reach destinations and switch to new target base station afer pausing
-		
-//		System.out.println("Base Node for this node: " + curr.baseNode);
-//		System.out.println("Current Node's position: " + curr.currentX + ", " + curr.currentY);
-//		System.out.println(
-//				"Base Node Position: " + baseStations.get(num).currentX + ", " + baseStations.get(num).currentY);
+		// Print lines for when we reach destinations and switch to new target
+		// base station afer pausing
+
+		// System.out.println("Base Node for this node: " + curr.baseNode);
+		// System.out.println("Current Node's position: " + curr.currentX + ", "
+		// + curr.currentY);
+		// System.out.println(
+		// "Base Node Position: " + baseStations.get(num).currentX + ", " +
+		// baseStations.get(num).currentY);
 
 	}
 
-	public static HashSet<Node> inRangeWifi(Network n, HashSet<Node> finalList, HashSet<Node> currNs,
-			long simStart) {
+	public static HashSet<Node> inRangeWifi(Network n, HashSet<Node> finalList, HashSet<Node> currNs, long simStart) {
 
 		HashSet<Node> wifiNodes = new HashSet<Node>();
 		List<Node> currNeighbs = new ArrayList<Node>(currNs);
-		
-//		int counter = counter++;
-//		System.out.println("COUNTER: " + counter);
+
+		// int counter = counter++;
+		// System.out.println("COUNTER: " + counter);
 
 		// This needs to be modified. This will check if two moving nodes are in
 		// range of each other.
@@ -234,8 +243,9 @@ public class UAVProject {
 
 						if (!init && !finalList.contains(y)) {
 
-							System.out.println("Node " + x.nodeNum + " is also in wifi range of " + y.nodeNum + " with distance: " + distance);
-							
+							System.out.println("Node #" + x.nodeNum + " is also in wifi range of: " + y.nodeNum
+									+ " with distance: " + distance);
+
 							wifiNodes.add(y);
 							finalList.add(y);
 
@@ -245,7 +255,6 @@ public class UAVProject {
 				}
 			}
 		}
-		
 
 		if (wifiNodes.size() > 0) {
 
@@ -253,7 +262,6 @@ public class UAVProject {
 			inRangeWifi(n, finalList, wifiHash, simStart);
 
 		}
-
 		return finalList;
 
 	}
@@ -429,28 +437,23 @@ public class UAVProject {
 
 								int baseNode = n.movingNodes.get(movePos).baseNode;
 
-//								System.out.println(getAngle(n.movingNodes.get(movePos), n.getNode(n, baseNode)) + "\n");
+								// System.out.println(getAngle(n.movingNodes.get(movePos),
+								// n.getNode(n, baseNode)) + "\n");
 								n.movingNodes.get(movePos)
 										.setAngle(getAngle(n.movingNodes.get(movePos), n.getNode(n, baseNode)));
-
-								// This line below is just to reset the print
-								// lines for now to show it's working.
-								// Later we'll modify this to show which nodes
-								// each node has come into contact with, or just
-								// uncomment it.
 
 							}
 
 						}
-				
-									if (inRangeBaseStation(n, n.movingNodes.get(movePos), n.baseNodes, time)) {
 
-										Node curr = n.getNode(n, movePos);
-										
-										double time = n.nodeWifiTimes.get(n.movingNodes.get(movePos).nodeNum);
-										n.nodeWifiTimes.put(n.movingNodes.get(movePos).nodeNum, time + runTime / 1000);
-										finalList.add(curr);
-//										System.out.println("ADDING: " + curr.nodeNum);
+						if (inRangeBaseStation(n, n.movingNodes.get(movePos), n.baseNodes, time)) {
+
+							Node curr = n.getNode(n, movePos);
+
+							double time = n.nodeWifiTimes.get(n.movingNodes.get(movePos).nodeNum);
+							n.nodeWifiTimes.put(n.movingNodes.get(movePos).nodeNum, time + runTime / 1000);
+							finalList.add(curr);
+							// System.out.println("ADDING: " + curr.nodeNum);
 
 						}
 
@@ -471,7 +474,8 @@ public class UAVProject {
 
 								if (distance <= curr.range) {
 
-									System.out.println("Node #" + two.nodeNum + " is also in wifi range of: " + curr.nodeNum + " with distance: " + distance);
+									System.out.println("Node #" + two.nodeNum + " is also in wifi range of: "
+											+ curr.nodeNum + " with distance: " + distance);
 									currNeighbs.add(two);
 
 								}
@@ -486,20 +490,20 @@ public class UAVProject {
 
 					if (fin.isEmpty()) {
 
-//						System.out.println("Final Wifi is empty!");
+						// System.out.println("Final Wifi is empty!");
 
 					}
 
 					else {
 
 						System.out.print("Final Wifi: ");
-						
+
 						for (Node n : fin) {
 
 							System.out.print(n.nodeNum + " ");
 
 						}
-						
+
 						System.out.println("\n");
 
 					}
