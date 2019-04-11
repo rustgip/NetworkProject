@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Random;
@@ -22,11 +23,12 @@ import java.util.TreeSet;
 public class UAVProject {
 
 	static DecimalFormat df = new DecimalFormat("#.000");
-	
+
 	public static void main(String[] args) throws InterruptedException {
 
 		int networkTime = 500; // Total number of executions
-		double executionTime = 1000; // Loop time in ms - 1000 = 1 second, change to 100-200 for faster executions
+		double executionTime = 300; // Loop time in ms - 1000 = 1 second, change
+									// to 100-200 for faster executions
 
 		// The other calculates interactions of nodes via a communication radius
 		// (both moving and non moving nodes).
@@ -62,11 +64,11 @@ public class UAVProject {
 
 	public static Network generateNForEmandEd(int networkTime) {
 
-		Network n = new Network(200, 200, networkTime);
+		Network n = new Network(300, 300, networkTime);
 
 		// 25 dynamic nodes.
 
-		for (int i = 0; i < 2; i++) {
+		for (int i = 0; i < 5; i++) {
 
 			Node x = new Node(n, "Dynamic");
 
@@ -93,6 +95,7 @@ public class UAVProject {
 			x.setNodeNum(size + i);
 			x.setStart();
 			x.setSpeed(0);
+			x.setMessage("Base");
 			// System.out.println(n.nodes.size() + i);
 
 			n.addNode(x);
@@ -180,82 +183,90 @@ public class UAVProject {
 			}
 		}
 
-		System.out.println("Base Node for this node: " + curr.baseNode);
-		System.out.println("Current Node's position: " + curr.currentX + ", " + curr.currentY);
-		System.out.println("Base Node Position: " + baseStations.get(num).currentX + ", " + baseStations.get(num).currentY);
+//		Print lines for when we reach destinations and switch to new target base station afer pausing
+		
+//		System.out.println("Base Node for this node: " + curr.baseNode);
+//		System.out.println("Current Node's position: " + curr.currentX + ", " + curr.currentY);
+//		System.out.println(
+//				"Base Node Position: " + baseStations.get(num).currentX + ", " + baseStations.get(num).currentY);
 
 	}
 
-	public static boolean inRangeWifi(Network n, Node curr, ArrayList<Node> allNodeList, ArrayList<Node> baseNodes,
+	public static HashSet<Node> inRangeWifi(Network n, HashSet<Node> finalList, HashSet<Node> currNs,
 			long simStart) {
 
-		boolean inRange = false;
+		HashSet<Node> wifiNodes = new HashSet<Node>();
+		List<Node> currNeighbs = new ArrayList<Node>(currNs);
 		
+//		int counter = counter++;
+//		System.out.println("COUNTER: " + counter);
+
 		// This needs to be modified. This will check if two moving nodes are in
 		// range of each other.
 		// After we check, we need to implement the modified path
 
-			Node x = curr;
+		for (int outer = 0; outer < currNeighbs.size(); outer++) {
 
-			for (int inner = 0; inner < allNodeList.size(); inner++) {
+			Node x = currNeighbs.get(outer);
+			finalList.add(x);
 
-				Node y = allNodeList.get(inner);
+			for (int inner = 0; inner < n.movingNodes.size(); inner++) {
 
-				if (x.nodeNum != y.nodeNum) {
+				Node y = n.movingNodes.get(inner);
+
+				if (x.nodeNum != y.nodeNum && x.message.equals("Traveling")) {
 
 					Double distance = Math.sqrt((x.currentY - y.currentY) * (x.currentY - y.currentY)
 							+ (x.currentX - y.currentX) * (x.currentX - y.currentX));
 
-					if (y.range >= distance) {
+					if (distance <= y.range) {
 
-//								encounteredDyn.get(x.nodeNum).put(y.nodeNum, String.valueOf(n.totalsimrunning));
+						boolean init = false;
 
-//								dynamictimes.add(Double.valueOf(n.totalsimrunning));
+						for (int g = 0; g < n.movingNodes.size(); g++) {
 
-//								Recursive call to check if that node is connected to Wifi
-							
-							if (y.getType().equals("Dynamic") && x.getType().equals("Dynamic")) {
-							
-								System.out.println("Dynamic Node: " + x.nodeNum + " and Dynamic Node: " + y.nodeNum
-										+ " are in range with distance: " + distance);
-								
-							inRangeBaseStation(n, y, n.baseNodes, simStart);
-							
+							if (wifiNodes.contains(n.movingNodes.get(g).baseNode)) {
+
+								init = true;
+
 							}
-							
-							else {
-								
-//								Dynamic and static base node case. This should technically not execute?
-//								Shouldn't execute because we don't run this if we're in range of a base node in the first place.
-//								Instead we run inRangeBaseStation()
-								
-								System.out.println("Dynamic Node: " + x.nodeNum + " and Base Node: " + y.nodeNum
-										+ " are in range with distance: " + distance);
-								
-//								Just for testing.
-								System.exit(0);
+						}
 
+						if (!init && !finalList.contains(y)) {
+
+							System.out.println("Node " + x.nodeNum + " is also in wifi range of " + y.nodeNum + " with distance: " + distance);
+							
+							wifiNodes.add(y);
+							finalList.add(y);
+
+						}
 					}
 
 				}
-
 			}
 		}
+		
 
-		return inRange;
+		if (wifiNodes.size() > 0) {
+
+			HashSet<Node> wifiHash = new HashSet<Node>(wifiNodes);
+			inRangeWifi(n, finalList, wifiHash, simStart);
+
+		}
+
+		return finalList;
 
 	}
 
-	public static boolean inRangeBaseStation(Network n,
-			Node curr, ArrayList<Node> baseNodeList, long simStart) {
+	public static boolean inRangeBaseStation(Network n, Node curr, ArrayList<Node> baseNodeList, long simStart) {
 
-		
-		// Checks if in range of ANY base station for wifi purposes, not destination
+		// Checks if in range of ANY base station for wifi purposes, not
+		// destination
 		boolean inRange = false;
-		
+
 		Node x = curr;
 		Node dest = n.getNode(n, x.baseNode);
-		
+
 		for (int inner = 0; inner < baseNodeList.size(); inner++) {
 
 			Node y = baseNodeList.get(inner);
@@ -263,29 +274,28 @@ public class UAVProject {
 			Double distance = Math.sqrt((x.currentY - y.currentY) * (x.currentY - y.currentY)
 					+ (x.currentX - y.currentX) * (x.currentX - y.currentX));
 
-			if (x.range >= distance) {
+			if (distance <= x.range && x.getMessage().equals("Traveling")) {
 
 				// if (!encounteredBaseCurr.containsKey(x.nodeNum)) {
 
 				System.out.println("Base node: " + y.nodeNum + " and Moving Node: " + x.nodeNum
 						+ " are in range with distance: " + distance);
 
-
 				if (y.nodeNum == dest.nodeNum) {
-		
-				inRange = true;
-				
-				System.out.println("IN RANGE OF TARGET BASE NODE");
-				x.setMessage("Arrived");
+
+					inRange = true;
+
+					System.out.println("IN RANGE OF TARGET BASE NODE!\n");
+					x.setMessage("Arrived");
 
 				}
-				
+
 				else {
-					
+
 					inRange = true;
-					
-					System.out.println("In range of non target base.");
-					
+
+					System.out.println("In range of non target base.\n");
+
 				}
 			}
 		}
@@ -299,7 +309,7 @@ public class UAVProject {
 		long time = System.currentTimeMillis();
 
 		ArrayList<Node> existingNodes = n.getNodes();
-		
+
 		for (int nodes = 0; nodes < existingNodes.size(); nodes++) {
 
 			if (existingNodes.get(nodes).getType().equals("Dynamic")) {
@@ -326,8 +336,10 @@ public class UAVProject {
 		for (int move = 0; move < n.movingNodes.size(); move++) {
 
 			int baseNode = n.movingNodes.get(move).baseNode;
-//			System.out.println(getAngle(n.movingNodes.get(move), n.baseNodes.get(baseNode - n.movingNodes.size())));
-			n.movingNodes.get(move).setAngle(getAngle(n.movingNodes.get(move), n.baseNodes.get(baseNode - n.movingNodes.size())));
+			// System.out.println(getAngle(n.movingNodes.get(move),
+			// n.baseNodes.get(baseNode - n.movingNodes.size())));
+			n.movingNodes.get(move)
+					.setAngle(getAngle(n.movingNodes.get(move), n.baseNodes.get(baseNode - n.movingNodes.size())));
 
 		}
 
@@ -343,6 +355,11 @@ public class UAVProject {
 					n.totalsimrunning = n.totalsimrunning + 1;
 
 					// System.out.println(n.totalsimrunning);
+
+					System.out.println("Elapsed time: " + (System.currentTimeMillis() - time) + "----------\n");
+
+					HashSet<Node> currNeighbs = new HashSet<Node>();
+					HashSet<Node> finalList = new HashSet<Node>();
 
 					for (int movePos = 0; movePos < n.movingNodes.size(); movePos++) {
 
@@ -369,32 +386,21 @@ public class UAVProject {
 							// n.movingNodes.get(movePos).runningTime = (int)
 							// (n.movingNodes.get(movePos).runningTime - 1);
 
-								// If we're not in range of a base station, then check if we're in range of another node.
-								// Inside that, then check if that node is in range of a basestation using recursion.
-								
-								if (!inRangeBaseStation(n, n.movingNodes.get(movePos), n.baseNodes, time)) {
-									
-								inRangeWifi(n, n.movingNodes.get(movePos), existingNodes, n.baseNodes, time);
-								
-								}
-								
-								else {
-									
-								// In range of base station which always have wifi, so add to that node's total wifi time
-									
-									double time = n.nodeWifiTimes.get(n.movingNodes.get(movePos).nodeNum);
-									n.nodeWifiTimes.put(n.movingNodes.get(movePos).nodeNum, time + runTime / 1000);
-									
-								}
-							}
+							// If we're not in range of a base station, then
+							// check if we're in range of another node.
+							// Inside that, then check if that node is in range
+							// of a basestation using recursion.
+
+						}
 
 						else {
 
 							if (n.movingNodes.get(movePos).remainingPause > 0) {
-								
+
 								System.out.println("Pausing");
 
-								n.movingNodes.get(movePos).remainingPause = n.movingNodes.get(movePos).remainingPause - 1;
+								n.movingNodes.get(movePos).remainingPause = n.movingNodes.get(movePos).remainingPause
+										- 1;
 
 							}
 
@@ -422,9 +428,8 @@ public class UAVProject {
 								selectBaseDestination(n, n.movingNodes.get(movePos), n.baseNodes);
 
 								int baseNode = n.movingNodes.get(movePos).baseNode;
-								
-								System.out.println(
-										getAngle(n.movingNodes.get(movePos), n.getNode(n, baseNode)) + "\n");
+
+//								System.out.println(getAngle(n.movingNodes.get(movePos), n.getNode(n, baseNode)) + "\n");
 								n.movingNodes.get(movePos)
 										.setAngle(getAngle(n.movingNodes.get(movePos), n.getNode(n, baseNode)));
 
@@ -437,9 +442,67 @@ public class UAVProject {
 							}
 
 						}
+				
+									if (inRangeBaseStation(n, n.movingNodes.get(movePos), n.baseNodes, time)) {
+
+										Node curr = n.getNode(n, movePos);
+										
+										double time = n.nodeWifiTimes.get(n.movingNodes.get(movePos).nodeNum);
+										n.nodeWifiTimes.put(n.movingNodes.get(movePos).nodeNum, time + runTime / 1000);
+										finalList.add(curr);
+//										System.out.println("ADDING: " + curr.nodeNum);
+
+						}
 
 					}
 
+					for (Node curr : finalList) {
+
+						for (int checkMoving = 0; checkMoving < n.movingNodes.size(); checkMoving++) {
+
+							if (n.movingNodes.get(checkMoving).nodeNum != curr.nodeNum) {
+
+								Node two = n.getNode(n, n.movingNodes.get(checkMoving).nodeNum);
+
+								double distance = Math.sqrt(Math.pow((two.currentY - curr.currentY), 2)
+										+ Math.pow((two.currentX - curr.currentX), 2));
+
+								// System.out.println("D: " + distance);
+
+								if (distance <= curr.range) {
+
+									System.out.println("Node #" + two.nodeNum + " is also in wifi range of: " + curr.nodeNum + " with distance: " + distance);
+									currNeighbs.add(two);
+
+								}
+
+							}
+
+						}
+
+					}
+
+					HashSet<Node> fin = inRangeWifi(n, finalList, currNeighbs, time);
+
+					if (fin.isEmpty()) {
+
+//						System.out.println("Final Wifi is empty!");
+
+					}
+
+					else {
+
+						System.out.print("Final Wifi: ");
+						
+						for (Node n : fin) {
+
+							System.out.print(n.nodeNum + " ");
+
+						}
+						
+						System.out.println("\n");
+
+					}
 				}
 
 				else {
@@ -454,7 +517,7 @@ public class UAVProject {
 		}, 0, (int) runTime);
 
 		long totalTime = (long) ((n.getRunTime() * runTime) + 5000);
-		
+
 		Timer x = new Timer();
 		x.schedule(new TimerTask() {
 			@Override
@@ -480,21 +543,21 @@ public class UAVProject {
 
 				}
 
-				for (Integer name: n.nodeWifiTimes.keySet()){
+				for (Integer name : n.nodeWifiTimes.keySet()) {
 
-		            String key = name.toString();
-		            String value = n.nodeWifiTimes.get(name).toString();  
-		            System.out.println("Node #" + key + " was in Wifi Range for: " + value + " seconds");  
+					String key = name.toString();
+					String value = n.nodeWifiTimes.get(name).toString();
+					System.out.println("Node #" + key + " was in Wifi Range for: " + value + " seconds");
 
-		} 
-				
-				System.out.println("Total simulation time: " + ((System.currentTimeMillis() - time) - 5000) / 1000 + " seconds");
-				
+				}
+
+				System.out.println(
+						"Total simulation time: " + ((System.currentTimeMillis() - time) - 5000) / 1000 + " seconds");
+
 				x.cancel();
 				x.purge();
 
 				// System.out.println("\nList of encountered Dynamic nodes: ");
-
 
 			}
 
@@ -520,7 +583,7 @@ public class UAVProject {
 			ByteArrayOutputStream bos = new ByteArrayOutputStream();
 			ObjectOutputStream out = new ObjectOutputStream(bos);
 			out.writeObject(orig);
-			out.flush();	
+			out.flush();
 			out.close();
 
 			// Make an input stream from the byte array and read
@@ -540,7 +603,7 @@ public class UAVProject {
 class Network implements Serializable {
 
 	HashMap<Integer, Double> nodeWifiTimes = new HashMap<Integer, Double>();
-	
+
 	ArrayList<Node> movingNodes = new ArrayList<Node>();
 	ArrayList<Node> baseNodes = new ArrayList<Node>();
 
@@ -642,7 +705,7 @@ class Node implements Serializable {
 	int nodeNum;
 	int speed;
 	int runningTime;
-	int range = 10;
+	int range = 25;
 
 	double startX;
 	double startY;
