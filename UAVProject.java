@@ -1,10 +1,16 @@
 import java.awt.Point;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.PrintWriter;
 import java.io.Serializable;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Time;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -24,7 +30,7 @@ public class UAVProject {
 
 	static DecimalFormat df = new DecimalFormat("#.000");
 
-	public static void main(String[] args) throws InterruptedException {
+	public static void main(String[] args) throws InterruptedException, IOException {
 
 		int networkTime = 200; // Total number of executions
 		double executionTime = 300; // Loop time in ms - 1000 = 1 second, change
@@ -49,6 +55,9 @@ public class UAVProject {
 
 		// Run one simulator for
 
+		Path fileToDeletePath = Paths.get("Test.csv");
+		Files.delete(fileToDeletePath);
+		
 		for (int z = 0; z < 1; z++) {
 
 			CreateSimEnviron(generateNForEmandEd(networkTime), executionTime);
@@ -312,7 +321,7 @@ public class UAVProject {
 
 	}
 
-	public static void CreateSimEnviron(Network n, double runTime) {
+	public static void CreateSimEnviron(Network n, double runTime) throws IOException {
 
 		long time = System.currentTimeMillis();
 
@@ -369,8 +378,33 @@ public class UAVProject {
 					HashSet<Node> currNeighbs = new HashSet<Node>();
 					HashSet<Node> finalList = new HashSet<Node>();
 
+					PrintWriter out = null;
+					
+					try {
+						out = new PrintWriter(new FileWriter("Test.csv", true));
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					
+			        StringBuilder sb = new StringBuilder();
+					
+			        sb.append(System.currentTimeMillis() - time);
+			        sb.append(',');
+			        
 					for (int movePos = 0; movePos < n.movingNodes.size(); movePos++) {
 
+				        sb.append("Node: " + n.movingNodes.get(movePos).nodeNum);
+				        sb.append(',');
+				        sb.append("X: " + n.movingNodes.get(movePos).currentX);
+				        sb.append(',');
+				        sb.append("Y: " + n.movingNodes.get(movePos).currentY);
+				        sb.append(',');
+				        sb.append(n.movingNodes.get(movePos).message);
+				        sb.append(',');
+				        sb.append("Base: " + n.movingNodes.get(movePos).baseNode);
+				        sb.append(',');
+						
 						if (n.movingNodes.get(movePos).message.equals("Traveling")) {
 
 							double speed = n.movingNodes.get(movePos).speed;
@@ -455,6 +489,11 @@ public class UAVProject {
 						}
 
 					}
+					
+
+					sb.append('\n');
+			        out.write(sb.toString());
+			        out.close();
 
 					for (Node curr : finalList) {
 
@@ -519,7 +558,8 @@ public class UAVProject {
 		}, 0, (int) runTime);
 
 		long totalTime = (long) ((n.getRunTime() * runTime) + 5000);
-
+	
+	        
 		Timer x = new Timer();
 		x.schedule(new TimerTask() {
 			@Override
