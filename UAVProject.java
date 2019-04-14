@@ -34,7 +34,7 @@ public class UAVProject {
 
 		int networkTime = 200; // Total number of executions
 		double executionTime = 300; // Loop time in ms - 1000 = 1 second, change
-									// to 100-200 for faster executions
+		// to 100-200 for faster executions
 
 		// The other calculates interactions of nodes via a communication radius
 		// (both moving and non moving nodes).
@@ -57,7 +57,7 @@ public class UAVProject {
 
 		Path fileToDeletePath = Paths.get("Test.csv");
 		Files.delete(fileToDeletePath);
-		
+
 		for (int z = 0; z < 1; z++) {
 
 			CreateSimEnviron(generateNForEmandEd(networkTime), executionTime);
@@ -157,12 +157,12 @@ public class UAVProject {
 		boolean loop = true;
 
 		if (baseStations.size() < 2) {
-			
+
 			System.out.println("YOU NEED MORE THAN ONE BASE STATION SO YOU CAN SWITCH!");
 			System.exit(0);
-			
+
 		}
-		
+
 		if (num == -1) {
 
 			num = (int) curr.GenerateRandom(baseStations.size());
@@ -257,6 +257,7 @@ public class UAVProject {
 
 							wifiNodes.add(y);
 							finalList.add(y);
+							x.addNeighbor(y);
 
 						}
 					}
@@ -301,6 +302,7 @@ public class UAVProject {
 				if (y.nodeNum == dest.nodeNum) {
 
 					inRange = true;
+					x.addNeighbor(y);
 
 					System.out.println("IN RANGE OF TARGET BASE NODE!\n");
 					x.setMessage("Arrived");
@@ -379,32 +381,34 @@ public class UAVProject {
 					HashSet<Node> finalList = new HashSet<Node>();
 
 					PrintWriter out = null;
-					
+
 					try {
 						out = new PrintWriter(new FileWriter("Test.csv", true));
 					} catch (IOException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
-					
-			        StringBuilder sb = new StringBuilder();
-					
-			        sb.append(System.currentTimeMillis() - time);
-			        sb.append(',');
-			        
+
+					StringBuilder sb = new StringBuilder();
+
+					sb.append(System.currentTimeMillis() - time);
+					sb.append(',');
+
 					for (int movePos = 0; movePos < n.movingNodes.size(); movePos++) {
 
-				        sb.append("Node: " + n.movingNodes.get(movePos).nodeNum);
-				        sb.append(',');
-				        sb.append("X: " + n.movingNodes.get(movePos).currentX);
-				        sb.append(',');
-				        sb.append("Y: " + n.movingNodes.get(movePos).currentY);
-				        sb.append(',');
-				        sb.append(n.movingNodes.get(movePos).message);
-				        sb.append(',');
-				        sb.append("Base: " + n.movingNodes.get(movePos).baseNode);
-				        sb.append(',');
-						
+						n.movingNodes.get(movePos).neighborNodes = new HashSet<Node>();
+
+						sb.append("Node: " + n.movingNodes.get(movePos).nodeNum);
+						sb.append(',');
+						sb.append("X: " + n.movingNodes.get(movePos).currentX);
+						sb.append(',');
+						sb.append("Y: " + n.movingNodes.get(movePos).currentY);
+						sb.append(',');
+						sb.append(n.movingNodes.get(movePos).message);
+						sb.append(',');
+						sb.append("Base: " + n.movingNodes.get(movePos).baseNode);
+						sb.append(',');
+
 						if (n.movingNodes.get(movePos).message.equals("Traveling")) {
 
 							double speed = n.movingNodes.get(movePos).speed;
@@ -489,11 +493,11 @@ public class UAVProject {
 						}
 
 					}
-					
+
 
 					sb.append('\n');
-			        out.write(sb.toString());
-			        out.close();
+					out.write(sb.toString());
+					out.close();
 
 					for (Node curr : finalList) {
 
@@ -513,6 +517,7 @@ public class UAVProject {
 									System.out.println("Node #" + two.nodeNum + " is also in wifi range of: "
 											+ curr.nodeNum + " with distance: " + distance);
 									currNeighbs.add(two);
+									curr.addNeighbor(two);
 
 								}
 
@@ -544,6 +549,18 @@ public class UAVProject {
 
 						System.out.println("\n");
 
+						//printing out neighbors
+						for (int i = 0; i < existingNodes.size(); i++){
+							HashSet<Node> neighbors = existingNodes.get(i).getNeighborNodes();
+							System.out.print("Node# " + existingNodes.get(i).nodeNum + " Neighbors: ");
+							for (Node node : neighbors) {
+								System.out.print(node.nodeNum + " ");
+							}
+						}
+
+						System.out.println("\n");
+
+
 					}
 				}
 
@@ -559,8 +576,8 @@ public class UAVProject {
 		}, 0, (int) runTime);
 
 		long totalTime = (long) ((n.getRunTime() * runTime) + 5000);
-	
-	        
+
+
 		Timer x = new Timer();
 		x.schedule(new TimerTask() {
 			@Override
@@ -737,6 +754,8 @@ class Coordinates implements Serializable {
 class Node implements Serializable {
 
 	ArrayList<Coordinates> coords = new ArrayList<Coordinates>();
+	HashSet<Node> neighborNodes = new HashSet<Node>();
+
 
 	int baseNode = -1;
 	boolean wifi = false;
@@ -892,6 +911,18 @@ class Node implements Serializable {
 
 		return randomValue;
 
+	}
+
+	public void addNeighbor(Node neighbor){
+		neighborNodes.add(neighbor);
+	}
+
+	public void removeNeighbor(Node neighbor){
+		neighborNodes.remove(neighbor);
+	}
+
+	public HashSet<Node> getNeighborNodes(){
+		return neighborNodes;
 	}
 
 }
