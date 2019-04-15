@@ -9,6 +9,7 @@ import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Time;
@@ -55,8 +56,12 @@ public class UAVProject {
 
 		// Run one simulator for
 
-		Path fileToDeletePath = Paths.get("Test.csv");
-		Files.delete(fileToDeletePath);
+        try {
+            Path fileToDeletePath = Paths.get("Test.csv");
+            Files.delete(fileToDeletePath);
+        } catch (Exception e) {
+            System.out.println("File not found, skipping...");
+        }
 
 		for (int z = 0; z < 1; z++) {
 
@@ -755,7 +760,6 @@ class Node implements Serializable {
 
 	ArrayList<Coordinates> coords = new ArrayList<Coordinates>();
 	HashSet<Node> neighborNodes = new HashSet<Node>();
-
 
 	int baseNode = -1;
 	boolean wifi = false;

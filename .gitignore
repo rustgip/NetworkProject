@@ -1,0 +1,12 @@
+# Compiled Code #
+#################
+*.class
+
+# IntelliJ Compilation Files #
+##############################
+.idea
+out
+
+# Results and Output Files #
+############################
+*.csv
