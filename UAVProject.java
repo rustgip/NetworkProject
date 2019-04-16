@@ -213,6 +213,137 @@ public class UAVProject {
 
     }
 
+    //takes all the nodes and adjusts their routes in order to maximize wifi connectivity
+    public static void routeAdjustments(Network n, HashSet<Node> movingNodes, double dynamicNodeThreshold, double destinationThreshold){
+
+        Node nodeToFollow = null;
+        double adjustedAngle = 0.0;
+        double distanceToDestination = Double.MAX_VALUE;
+
+        //looping through all dynamic nodes
+        for(Node node: movingNodes){
+            //checks if current node has a base station as a neighbor
+            if(!hasBaseStationNeighbor(node)) {
+
+
+                //destinationThreshold check
+                //if node current distance from destination is within a current threshold then just head straight to destination
+                distanceToDestination = euclideanDistance(node.currentX, node.endX, node.currentY, node.endY);
+                if(distanceToDestination < destinationThreshold){
+                    Coordinates currentLocation = new Coordinates(node.currentX, node.currentY);
+                    Coordinates destinationLocation = new Coordinates(node.endX, node.endY);
+                    node.setAngle(getAngle(currentLocation, destinationLocation));
+                }
+                //otherwise path adjustment towards dynamic nodes with wifi connection
+                else{
+                    //finds node with closest destination to current node to use that nodes path to follow
+                    nodeToFollow = findNodeWithClosestDestination(n, node);
+
+                    //dynamicNodeThreshold - needs to looked into further
+                    //checks to see if the destinations of nodeToFollow and current node aren't too far apart
+                    //or else path adjustments will take the node in the wrong direction
+                    double destinationDistanceApart = euclideanDistance(node.endX, nodeToFollow.endX, node.endY, nodeToFollow.endY);
+
+                    //if threshold met then continue adjusting angle to follow other node
+                    if(destinationDistanceApart < dynamicNodeThreshold){
+                        //adjusts angle
+                        adjustedAngle = determineAdjustedAngle(node, nodeToFollow, dynamicNodeThreshold);
+                        node.setAngle(adjustedAngle);
+                    }
+                    //if threshold not met then set angle to head directly towards destination
+                    else{
+                        Coordinates currentLocation = new Coordinates(node.currentX, node.currentY);
+                        Coordinates destinationLocation = new Coordinates(node.endX, node.endY);
+                        node.setAngle(getAngle(currentLocation, destinationLocation));
+                    }
+
+                }
+            }
+        }
+
+    }
+
+    //returns the adjusted angle taken from midway-point between destination of the new nodes
+    public static double determineAdjustedAngle(Node node1, Node node2){
+
+        //find midway-point
+        Coordinates midPoint = findMidwayPoint(node1.endX, node1.endY, node2.endX, node2.endY);
+        Coordinates startPoint = new Coordinates(node1.currentX, node1.currentY);
+        double adjustedAngle = getAngle(startPoint, midpoint);
+
+        return adjustedAngle;
+    }
+
+    //returns the coordinate object for the midwaypoint between the two node
+    public static Coordinates findMidwayPoint(double x1, double y1, double x2, double y2){
+
+        double midX = (x1+x2)/2;
+        double midY = (y1+y2)/2;
+
+        Coordinates midPoint = new Coordinates(midX, midY);
+
+        return midPoint;
+
+    }
+
+    //checks neighbors of the node to see which of its neighbors destination is closest to current nodes destination and is also connected to wifi
+    public static Node findNodeWithClosestDestination(Network n, Node currNode){
+
+        Node bestNode;
+        HashSet<Node> neighbors = currNode.getNeighborNodes();
+        int currBaseStationNum = currNode.baseNode;
+        node currBaseStation = n.getNode(n, currBaseStationNum);
+        double currX = currBaseStation.currentX;
+        double currY = currBaseStation.currentY;
+        int node2BaseStationNum = -1;
+        node node2BaseStation = null;
+        double node2X = -1.0;
+        double node2Y = -1.0;
+        double bestDistance = Double.MAX_VALUE;
+        double bestNode = null;
+
+        //loops through set of neighbor nodes to determine which one has the closest destination to the current node's destination
+        for(Node i: neighbors){
+            if(i.connectedToWifi){
+
+                node2BaseStationNum = i.baseNode;
+                node2BaseStation = n.getNode(n, node2BaseStationNum);
+                node2X = node2BaseStation.currentX;
+                node2Y = node2BaseStation.currentY;
+
+                if(bestDistance > euclideanDistance(currX, node2X, currY, node2Y)){
+                    bestDistance = euclideanDistance(currX, node2X, currY, node2Y);
+                    bestNode = i;
+                }
+
+            }
+        }
+
+        return bestNode;
+    }
+
+    //returns the euclidean distance taken from two points
+    public static double euclideanDistance(double x1, double x2, double y1, double y2) {
+        return Math.sqrt(((y1 - x1) * (y1 - x1)) + ((y2 - x2) * (y2 - x2)));
+    }
+
+    //checks if any of the node's neighbors is a base station
+    public static boolean hasBaseStationNeighbor(Node currNode){
+
+        boolean hasBaseStation = false;
+        HashSet<Node> neighbors = currNode.getNeighborNodes();
+
+        //loops through set of neighbor nodes to determine if one is a base station
+        for(Node i: neighbors){
+            if(i.getType().equals("Base")){
+                hasBaseStation = true;
+            }
+        }
+
+        return hasBaseStation;
+
+    }
+
     //
     public static HashSet<Node> inRangeWifi(Network n, HashSet<Node> finalList, HashSet<Node> currNs, long simStart) {
 
@@ -566,6 +697,12 @@ public class UAVProject {
                     // updates the dynamic nodes if they are multi-hop connected.
                     HashSet<Node> fin = inRangeWifi(n, finalList, currNeighbs, time);
 
+                    double destinationThreshold = 2 * movingNodes.get(0).range;
+                    double dynamicNodeThreshold = 2 * movingNodes.get(0).range;
+
+                    //function calls takes list of all nodes and adjusts their paths
+                    routeAdjustments(n, movingNodes, dynamicNodeThreshold, destinationThreshold);
+
                     //No one is connected to a base station if this if statement is true!
                     if (fin.isEmpty()) {
                         // System.out.println("Final Wifi is empty!");
@@ -668,6 +805,16 @@ public class UAVProject {
 
         double deltaX = secondPoint.currentX - firstPoint.currentX;
         double deltaY = secondPoint.currentY - firstPoint.currentY;
+        double angle = Math.atan2(deltaY, deltaX);
+
+        return angle;
+
+    }
+
+    public static double getAngle(Coordinates startPoint, Coordinates endPoint){
+
+        double deltaX = endPoint.x - startPoint.x;
+        double deltaY = endPoint.y - startPoint.y;
         double angle = Math.atan2(deltaY, deltaX);
 
         return angle;
@@ -902,8 +1049,10 @@ class Node implements Serializable {
 
     public void setAngle(double Angle) {
 
+        /*
         Random r = new Random();
         double direction = 0 + (Math.PI - 0) * r.nextDouble();
+
 
         int random = r.nextInt(10 - 1 + 1) + 1;
 
@@ -912,7 +1061,7 @@ class Node implements Serializable {
             direction = direction * -1;
 
         }
-
+        */
         // this.angle = direction;
         this.angle = Angle;
 
