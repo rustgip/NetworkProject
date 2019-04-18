@@ -52,9 +52,11 @@ public class UAVProject {
         // Trying to remove results file from any previous executions...
         try {
             Path fileToDeletePath = Paths.get("Test.csv");
+            Path secondFileToDeletePath = Paths.get("movement_plot.csv");
             Files.delete(fileToDeletePath);
+            Files.delete(secondFileToDeletePath);
         } catch(NoSuchFileException e) {
-            System.out.println("File not found, moving on...");
+            System.out.println("Files not found, moving on...");
         }
 
         //Spinning up threads for each simulation...
@@ -77,7 +79,7 @@ public class UAVProject {
 
         // 25 dynamic nodes.
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 10; i++) {
 
             Node x = new Node(n, "Dynamic");
 
@@ -98,7 +100,7 @@ public class UAVProject {
 
         // 10 static nodes.
 
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < 5; i++) {
 
             Node x = new Node(n, "Base");
             x.setNodeNum(size + i);
@@ -214,7 +216,7 @@ public class UAVProject {
     }
 
     //takes all the nodes and adjusts their routes in order to maximize wifi connectivity
-    public static void routeAdjustments(Network n, HashSet<Node> movingNodes, double dynamicNodeThreshold, double destinationThreshold){
+    public static void routeAdjustments(Network n, ArrayList<Node> movingNodes, double dynamicNodeThreshold, double destinationThreshold){
 
         Node nodeToFollow = null;
         double adjustedAngle = 0.0;
@@ -236,25 +238,29 @@ public class UAVProject {
                 }
                 //otherwise path adjustment towards dynamic nodes with wifi connection
                 else{
-                    //finds node with closest destination to current node to use that nodes path to follow
-                    nodeToFollow = findNodeWithClosestDestination(n, node);
+                    if(node.neighborNodes.size() > 1) {
 
-                    //dynamicNodeThreshold - needs to looked into further
-                    //checks to see if the destinations of nodeToFollow and current node aren't too far apart
-                    //or else path adjustments will take the node in the wrong direction
-                    double destinationDistanceApart = euclideanDistance(node.endX, nodeToFollow.endX, node.endY, nodeToFollow.endY);
+                        //finds node with closest destination to current node to use that nodes path to follow
+                        nodeToFollow = findNodeWithClosestDestination(n, node);
 
-                    //if threshold met then continue adjusting angle to follow other node
-                    if(destinationDistanceApart < dynamicNodeThreshold){
-                        //adjusts angle
-                        adjustedAngle = determineAdjustedAngle(node, nodeToFollow, dynamicNodeThreshold);
-                        node.setAngle(adjustedAngle);
-                    }
-                    //if threshold not met then set angle to head directly towards destination
-                    else{
-                        Coordinates currentLocation = new Coordinates(node.currentX, node.currentY);
-                        Coordinates destinationLocation = new Coordinates(node.endX, node.endY);
-                        node.setAngle(getAngle(currentLocation, destinationLocation));
+                        //dynamicNodeThreshold - needs to looked into further
+                        //checks to see if the destinations of nodeToFollow and current node aren't too far apart
+                        //or else path adjustments will take the node in the wrong direction
+                        double destinationDistanceApart = euclideanDistance(node.endX, nodeToFollow.endX, node.endY, nodeToFollow.endY);
+
+                        //if threshold met then continue adjusting angle to follow other node
+                        if (destinationDistanceApart < dynamicNodeThreshold) {
+                            //adjusts angle
+                            adjustedAngle = determineAdjustedAngle(node, nodeToFollow);
+                            node.setAngle(adjustedAngle);
+                        }
+                        //if threshold not met then set angle to head directly towards destination
+                        else {
+                            Coordinates currentLocation = new Coordinates(node.currentX, node.currentY);
+                            Coordinates destinationLocation = new Coordinates(node.endX, node.endY);
+                            node.setAngle(getAngle(currentLocation, destinationLocation));
+                        }
+
                     }
 
                 }
@@ -269,7 +275,7 @@ public class UAVProject {
         //find midway-point
         Coordinates midPoint = findMidwayPoint(node1.endX, node1.endY, node2.endX, node2.endY);
         Coordinates startPoint = new Coordinates(node1.currentX, node1.currentY);
-        double adjustedAngle = getAngle(startPoint, midpoint);
+        double adjustedAngle = getAngle(startPoint, midPoint);
 
         return adjustedAngle;
     }
@@ -289,18 +295,17 @@ public class UAVProject {
     //checks neighbors of the node to see which of its neighbors destination is closest to current nodes destination and is also connected to wifi
     public static Node findNodeWithClosestDestination(Network n, Node currNode){
 
-        Node bestNode;
+        Node bestNode = null;
         HashSet<Node> neighbors = currNode.getNeighborNodes();
         int currBaseStationNum = currNode.baseNode;
-        node currBaseStation = n.getNode(n, currBaseStationNum);
+        Node currBaseStation = n.getNode(n, currBaseStationNum);
         double currX = currBaseStation.currentX;
         double currY = currBaseStation.currentY;
         int node2BaseStationNum = -1;
-        node node2BaseStation = null;
+        Node node2BaseStation = null;
         double node2X = -1.0;
         double node2Y = -1.0;
         double bestDistance = Double.MAX_VALUE;
-        double bestNode = null;
 
         //loops through set of neighbor nodes to determine which one has the closest destination to the current node's destination
         for(Node i: neighbors){
@@ -526,19 +531,23 @@ public class UAVProject {
                     HashSet<Node> finalList = new HashSet<Node>();
 
                     PrintWriter out = null;
+                    PrintWriter movementOut = null;
 
                     // Setting up to print out the output CSV...
                     try {
                         out = new PrintWriter(new FileWriter("Test.csv", true));
+                        movementOut = new PrintWriter(new FileWriter("movement_plot.csv", true));
                     } catch (IOException e) {
                         // TODO Auto-generated catch block
                         e.printStackTrace();
                     }
 
                     StringBuilder sb = new StringBuilder();
+                    StringBuilder plottingSb = new StringBuilder();
 
                     sb.append(System.currentTimeMillis() - time);
                     sb.append(',');
+                    plottingSb.append(n.totalsimrunning + ":");
 
                     // Lets decrypt this wizardry here...
                     // Its seeming like a lot of string building for logging purposes...
@@ -558,8 +567,13 @@ public class UAVProject {
                         sb.append(',');
                         sb.append(n.movingNodes.get(movePos).message);
                         sb.append(',');
-                        sb.append("Base: " + n.movingNodes.get(movePos).baseNode);
+                        sb.append("Dest: " + n.movingNodes.get(movePos).baseNode);
                         sb.append(',');
+
+                        plottingSb.append(n.movingNodes.get(movePos).nodeNum + ",");
+                        plottingSb.append(n.movingNodes.get(movePos).currentX + ",");
+                        plottingSb.append(n.movingNodes.get(movePos).currentY + ",");
+                        plottingSb.append(n.movingNodes.get(movePos).baseNode + ";");
 
                         // We actually update nodes accordinaly here...
                         // Traveling node's positions are incremented. - Traveling is default.
@@ -655,8 +669,11 @@ public class UAVProject {
 
 
                     sb.append('\n');
+                    plottingSb.append("\n");
                     out.write(sb.toString());
+                    movementOut.write(plottingSb.toString());
                     out.close();
+                    movementOut.close();
 
                     // For every node within the list of nodes that are within range of a base station...
                     for (Node curr : finalList) {
@@ -697,11 +714,11 @@ public class UAVProject {
                     // updates the dynamic nodes if they are multi-hop connected.
                     HashSet<Node> fin = inRangeWifi(n, finalList, currNeighbs, time);
 
-                    double destinationThreshold = 2 * movingNodes.get(0).range;
-                    double dynamicNodeThreshold = 2 * movingNodes.get(0).range;
+                    double destinationThreshold = 2 * n.movingNodes.get(0).range;
+                    double dynamicNodeThreshold = 2 * n.movingNodes.get(0).range;
 
                     //function calls takes list of all nodes and adjusts their paths
-                    routeAdjustments(n, movingNodes, dynamicNodeThreshold, destinationThreshold);
+                    routeAdjustments(n, n.movingNodes, dynamicNodeThreshold, destinationThreshold);
 
                     //No one is connected to a base station if this if statement is true!
                     if (fin.isEmpty()) {
