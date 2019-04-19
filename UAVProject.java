@@ -124,7 +124,7 @@ public class UAVProject {
 
 			x.setNodeNum(i);
 			x.setStart();
-			double speed = Math.round(x.GenerateRandom(5) + 1);
+			double speed = 10;
 			x.setSpeed((int) speed);
 			x.setPause(1);
 			x.setMessage("Traveling");
@@ -719,8 +719,8 @@ public class UAVProject {
 								// n.movingNodes.get(movePos).setRunTime(
 								// (int)
 								// Math.ceil(n.movingNodes.get(movePos).GenerateRandom(n.getRunTime())));
-								double speed = Math.round(n.movingNodes.get(movePos).GenerateRandom(5) + 1);
-								n.movingNodes.get(movePos).setSpeed((int) speed);
+//								double speed = Math.round(n.movingNodes.get(movePos).GenerateRandom(5) + 1);
+//								n.movingNodes.get(movePos).setSpeed((int) speed);
 								// System.out.println("New Angle/Direction: " +
 								// n.movingNodes.get(movePos).angle);
 								n.movingNodes.get(movePos).setMessage("Traveling");
