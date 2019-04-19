@@ -53,8 +53,10 @@ public class UAVProject {
         try {
             Path fileToDeletePath = Paths.get("Test.csv");
             Path secondFileToDeletePath = Paths.get("movement_plot.csv");
+            Path thirdFileToDeletePath = Paths.get("base_station_coordinates.csv");
             Files.delete(fileToDeletePath);
             Files.delete(secondFileToDeletePath);
+            Files.delete(thirdFileToDeletePath);
         } catch(NoSuchFileException e) {
             System.out.println("Files not found, moving on...");
         }
@@ -506,6 +508,22 @@ public class UAVProject {
             n.movingNodes.get(move).setAngle(getAngle(n.movingNodes.get(move), n.baseNodes.get(baseNode - n.movingNodes.size())));
 
         }
+
+        PrintWriter baseStationOut = null;
+
+        // Setting up to print out the output CSV...
+        try {
+            baseStationOut = new PrintWriter(new FileWriter("base_station_coordinates.csv", true));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        for(int baseStationIndex = 0; baseStationIndex < n.baseNodes.size(); baseStationIndex++) {
+            Node tempBaseStation = n.baseNodes.get(baseStationIndex);
+            baseStationOut.write(tempBaseStation.nodeNum + "," + tempBaseStation.currentX + "," + tempBaseStation.currentY + "\n");
+        }
+
+        baseStationOut.close();
 
         //Simulation setup is complete, actually start the node movement...
         Timer t = new Timer();
