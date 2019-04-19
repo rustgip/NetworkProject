@@ -24,8 +24,8 @@ public class UAVProject {
     static DecimalFormat df = new DecimalFormat("#.000");
 
     public static void main(String[] args) throws InterruptedException, IOException {
-        
-        int networkTime = 200; // Total number of executions
+
+        int networkTime = 2000; // Total number of executions
         double executionTime = 100; // Loop time in ms - 1000 = 1 second, change
         // to 100-200 for faster executions
 
@@ -81,7 +81,7 @@ public class UAVProject {
 
         // 25 dynamic nodes.
 
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 50; i++) {
 
             Node x = new Node(n, "Dynamic");
 
@@ -102,7 +102,7 @@ public class UAVProject {
 
         // 10 static nodes.
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 15; i++) {
 
             Node x = new Node(n, "Base");
             x.setNodeNum(size + i);
@@ -240,10 +240,11 @@ public class UAVProject {
                 }
                 //otherwise path adjustment towards dynamic nodes with wifi connection
                 else{
-                    if(node.neighborNodes.size() > 1) {
 
-                        //finds node with closest destination to current node to use that nodes path to follow
-                        nodeToFollow = findNodeWithClosestDestination(n, node);
+                    //finds node with closest destination to current node to use that nodes path to follow
+                    nodeToFollow = findNodeWithClosestDestination(n, node);
+
+                    if(nodeToFollow != null) {
 
                         //dynamicNodeThreshold - needs to looked into further
                         //checks to see if the destinations of nodeToFollow and current node aren't too far apart
@@ -736,6 +737,8 @@ public class UAVProject {
                     double dynamicNodeThreshold = 2 * n.movingNodes.get(0).range;
 
                     //function calls takes list of all nodes and adjusts their paths
+                    //comment out line below to run without route adjustments aka all nodes will move in straight
+                    //line towards destination
                     routeAdjustments(n, n.movingNodes, dynamicNodeThreshold, destinationThreshold);
 
                     //No one is connected to a base station if this if statement is true!
@@ -760,16 +763,25 @@ public class UAVProject {
 
                         System.out.println("\n");
 
-                        //Printing out neighbors
-                        for (int i = 0; i < existingNodes.size(); i++){
-                            HashSet<Node> neighbors = existingNodes.get(i).getNeighborNodes();
-                            System.out.print("Node# " + existingNodes.get(i).nodeNum + " Neighbors: ");
-                            for (Node node : neighbors) {
-                                System.out.print(node.nodeNum + " ");
-                            }
+						/*
+						//Printing out neighbors
+						for (int i = 0; i < existingNodes.size(); i++){
+							HashSet<Node> neighbors = existingNodes.get(i).getNeighborNodes();
+							System.out.print("Node# " + existingNodes.get(i).nodeNum + " Neighbors: ");
+							for (Node node : neighbors) {
+								System.out.print(node.nodeNum + " ");
+							}
+						}
+						*/
+
+                        for (Node node : fin) {
+
+                            node.connectedToWifi = false;
+
                         }
 
                         System.out.println("\n");
+
 
 
                     }
@@ -814,14 +826,21 @@ public class UAVProject {
 
                 }
 
+                double keyCounter = 0.0;
+                double wifiTimeAverage = 0.0;
+
                 for (Integer name : n.nodeWifiTimes.keySet()) {
 
+                    keyCounter++;
+                    wifiTimeAverage += n.nodeWifiTimes.get(name);
                     String key = name.toString();
                     String value = n.nodeWifiTimes.get(name).toString();
                     System.out.println("Node #" + key + " was in Wifi Range for: " + value + " seconds");
 
                 }
 
+                wifiTimeAverage = wifiTimeAverage / keyCounter;
+                System.out.println("Average Node Time Connected to Wifi: " + wifiTimeAverage + " seconds");
                 System.out.println(
                         "Total simulation time: " + ((System.currentTimeMillis() - time) - 5000) / 1000 + " seconds");
 
