@@ -84,7 +84,7 @@ public class UAVProject {
 		// Empty for now (Check how long each node took and how long it was
 		// disconnected from connectedToWifi).
 
-		long totalTime = (long) 60000; //change this based on how many number of RunTests
+		long totalTime = (long) 90000; //change this based on how many number of RunTests
 		
 		Timer x = new Timer();
 		x.schedule(new TimerTask() {
